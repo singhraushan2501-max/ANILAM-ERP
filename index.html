@@ -1,0 +1,1279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Anilam ERP - Hotel & Multi-Store Restaurant POS</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+.pos-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
+.drag-drop-zone { border: 2px dashed #cbd5e1; transition: all 0.2s ease; }
+.drag-drop-zone.dragover { border-color: #6366f1; background-color: #f8fafc; }
+</style>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex">
+
+<!-- Sidebar -->
+<aside class="w-64 bg-slate-900 text-slate-300 flex flex-col justify-between hidden md:flex">
+<div>
+<div class="p-5 border-b border-slate-800 flex items-center gap-3">
+<i class="fa-solid fa-hotel text-2xl text-indigo-400"></i>
+<div>
+<h1 class="font-bold text-lg text-white leading-tight">Anilam ERP</h1>
+<p class="text-xs text-slate-400">Multi-Store Platform</p>
+</div>
+</div>
+
+<!-- Store Selector -->
+<div class="p-4 border-b border-slate-800">
+<label class="block text-xs uppercase font-bold text-slate-400 mb-1">Active Store</label>
+<select id="activeStoreSelect" onchange="switchActiveStore()" class="w-full bg-slate-800 text-white rounded p-2 text-sm border border-slate-700 focus:outline-none focus:border-indigo-500">
+</select>
+</div>
+
+<!-- Navigation -->
+<nav class="p-4 space-y-1">
+<button onclick="switchTab('dashboard')" class="nav-btn active w-full flex items-center gap-3 px-3 py-2.5 rounded text-sm font-medium hover:bg-slate-800 hover:text-white transition">
+<i class="fa-solid fa-chart-line w-5"></i> Dashboard
+</button>
+<button onclick="switchTab('rooms')" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded text-sm font-medium hover:bg-slate-800 hover:text-white transition">
+<i class="fa-solid fa-bed w-5"></i> Room Management
+</button>
+<button onclick="switchTab('restaurant')" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded text-sm font-medium hover:bg-slate-800 hover:text-white transition">
+<i class="fa-solid fa-utensils w-5"></i> Restaurant POS
+</button>
+<button onclick="switchTab('sales-report')" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded text-sm font-medium hover:bg-slate-800 hover:text-white transition">
+<i class="fa-solid fa-receipt w-5"></i> Sales Report & Receipts
+</button>
+<button onclick="switchTab('inventory')" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded text-sm font-medium hover:bg-slate-800 hover:text-white transition">
+<i class="fa-solid fa-boxes-stacked w-5"></i> Menu & Products
+</button>
+<button onclick="switchTab('backup')" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded text-sm font-medium hover:bg-slate-800 hover:text-white transition">
+<i class="fa-solid fa-database w-5"></i> Backup & Restore
+</button>
+<button onclick="switchTab('loyalty')" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded text-sm font-medium hover:bg-slate-800 hover:text-white transition">
+<i class="fa-solid fa-gift w-5"></i> Loyalty & Referrals
+</button>
+<button onclick="switchTab('promotions')" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded text-sm font-medium hover:bg-slate-800 hover:text-white transition">
+<i class="fa-solid fa-bullhorn w-5"></i> Offers & Promotions
+</button>
+<button onclick="switchTab('stores')" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded text-sm font-medium hover:bg-slate-800 hover:text-white transition">
+<i class="fa-solid fa-store w-5"></i> Store Settings
+</button>
+</nav>
+</div>
+
+<div class="p-4 border-t border-slate-800 text-xs text-slate-500">
+System v2.6 • Store Multi-Tenant Active
+</div>
+</aside>
+
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col h-screen overflow-y-auto">
+
+<!-- Top Bar -->
+<header class="bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center sticky top-0 z-10">
+<h2 id="pageTitle" class="text-xl font-bold text-slate-800">REVENUE MANAGEMENT DASHBOARD</h2>
+<div class="flex items-center gap-4">
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
+<span class="w-2 h-2 rounded-full bg-emerald-500"></span> Gateway Online
+</span>
+<span id="currentStoreDisplay" class="text-sm font-medium text-slate-600 bg-slate-100 px-3 py-1 rounded-lg">
+Store: Anilam Main Resort
+</span>
+</div>
+</header>
+
+<div class="p-6 flex-1">
+
+<!-- 1. REVENUE MANAGEMENT & DASHBOARD -->
+<section id="dashboard" class="tab-content active space-y-6">
+<div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+<div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+<p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Combined Revenue</p>
+<h3 id="dashTotalRev" class="text-2xl font-black text-slate-800 mt-1">₹0.00</h3>
+<span class="text-xs text-emerald-600 font-medium">↑ Real-time tracked</span>
+</div>
+<div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+<p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Room Booking Rev</p>
+<h3 id="dashRoomRev" class="text-2xl font-black text-indigo-600 mt-1">₹0.00</h3>
+<span class="text-xs text-slate-500">Hotel Property Sales</span>
+</div>
+<div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+<p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Restaurant Sales</p>
+<h3 id="dashPosRev" class="text-2xl font-black text-emerald-600 mt-1">₹0.00</h3>
+<span class="text-xs text-slate-500">Ezo POS Terminal</span>
+</div>
+<div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+<p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Loyalty & Referrals Paid</p>
+<h3 id="dashPointsIssued" class="text-2xl font-black text-amber-500 mt-1">0 Pts</h3>
+<span class="text-xs text-slate-500">Customer Engagement</span>
+</div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+<h4 class="font-bold text-slate-700 mb-4">Multi-Store Revenue Stream</h4>
+<canvas id="revenueChart" class="max-h-64"></canvas>
+</div>
+<div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+<h4 class="font-bold text-slate-700 mb-4">Channel Breakdown (Rooms vs POS)</h4>
+<canvas id="channelChart" class="max-h-64"></canvas>
+</div>
+</div>
+</section>
+
+<!-- 2. ROOM MANAGEMENT & CHECK-IN -->
+<section id="rooms" class="tab-content space-y-6">
+<div class="flex justify-between items-center">
+<h3 class="text-lg font-bold">Property Room Matrix & Rate Configuration</h3>
+<button onclick="openBookingModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition">
++ New Guest Check-In
+</button>
+</div>
+
+<div id="roomGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+<!-- Room cards populated dynamically -->
+</div>
+
+<!-- Room Rates Configuration Table -->
+<div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mt-6">
+<div class="px-5 py-4 border-b border-slate-100">
+<h4 class="font-bold text-slate-800">Room Rate Management Settings</h4>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-sm text-left">
+<thead class="bg-slate-50 text-slate-500 uppercase text-xs">
+<tr>
+<th class="px-4 py-3">Room No</th>
+<th class="px-4 py-3">Category</th>
+<th class="px-4 py-3">Current Nightly Rate (₹)</th>
+<th class="px-4 py-3">Action</th>
+</tr>
+</thead>
+<tbody id="roomRatesTableBody" class="divide-y divide-slate-100">
+</tbody>
+</table>
+</div>
+</div>
+
+<div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mt-6">
+<div class="px-5 py-4 border-b border-slate-100">
+<h4 class="font-bold text-slate-800">Check-In Registry & Direct Billing</h4>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-sm text-left">
+<thead class="bg-slate-50 text-slate-500 uppercase text-xs">
+<tr>
+<th class="px-4 py-3">Guest</th>
+<th class="px-4 py-3">Room</th>
+<th class="px-4 py-3">Occupants</th>
+<th class="px-4 py-3">ID Proof</th>
+<th class="px-4 py-3">Total / Advance</th>
+<th class="px-4 py-3">Balance</th>
+<th class="px-4 py-3">Actions</th>
+</tr>
+</thead>
+<tbody id="bookingTableBody" class="divide-y divide-slate-100">
+</tbody>
+</table>
+</div>
+</div>
+</section>
+
+<!-- 3. RESTAURANT POS -->
+<section id="restaurant" class="tab-content">
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+<div class="lg:col-span-2 space-y-4">
+<div class="flex gap-2 overflow-x-auto pb-2" id="posCategories">
+<!-- Category Buttons -->
+</div>
+
+<div id="posGrid" class="grid pos-grid gap-3">
+<!-- Dynamically Populated Items -->
+</div>
+</div>
+
+<div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between h-[calc(100vh-140px)] sticky top-20">
+<div>
+<div class="flex justify-between items-center pb-3 border-b border-slate-100 mb-3">
+<h3 class="font-bold text-slate-800"><i class="fa-solid fa-receipt me-2 text-indigo-600"></i>Active Order</h3>
+<span class="text-xs bg-indigo-50 text-indigo-700 px-2 py-1 rounded font-mono" id="posOrderNo">#ORD-001</span>
+</div>
+<div class="mb-3 space-y-2">
+<input type="text" id="posCustomerName" placeholder="Guest Name" class="w-full p-2 border rounded text-xs">
+<input type="text" id="posCustomerPhone" placeholder="WhatsApp Phone (e.g. 919876543210)" class="w-full p-2 border rounded text-xs">
+</div>
+
+<!-- Cart Items list -->
+<div id="posCartItems" class="space-y-2 overflow-y-auto max-h-48 pr-1">
+<p class="text-xs text-slate-400 text-center py-8">Tap items to add to order</p>
+</div>
+</div>
+
+<div class="border-t border-slate-100 pt-3 space-y-2">
+<div class="flex justify-between text-xs text-slate-500">
+<span>Subtotal</span>
+<span id="posSubtotal">₹0.00</span>
+</div>
+<div class="flex justify-between items-center text-xs text-slate-500">
+<span>Discount (%)</span>
+<input type="number" id="posDiscountPercent" value="0" min="0" max="100" oninput="calculatePosTotal()" class="w-16 text-right border rounded px-1 text-xs">
+</div>
+<div class="flex justify-between items-center text-xs text-slate-500">
+<span>Discount (Flat ₹)</span>
+<input type="number" id="posDiscountFlat" value="0" min="0" oninput="calculatePosTotal()" class="w-16 text-right border rounded px-1 text-xs">
+</div>
+<div class="flex justify-between text-sm font-bold text-slate-800 border-t pt-2">
+<span>Total Amount</span>
+<span id="posGrandTotal" class="text-indigo-600">₹0.00</span>
+</div>
+
+<div class="grid grid-cols-2 gap-2 pt-2">
+<button onclick="processPosCheckout('Cash')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded text-xs flex items-center justify-center gap-1">
+<i class="fa-solid fa-money-bill"></i> Cash Pay
+</button>
+<button onclick="processPosCheckout('Online/UPI')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded text-xs flex items-center justify-center gap-1">
+<i class="fa-solid fa-qrcode"></i> UPI / Card
+</button>
+</div>
+</div>
+</div>
+</div>
+</section>
+
+<!-- 4. SALES REPORT & RECEIPTS -->
+<section id="sales-report" class="tab-content space-y-6">
+<div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+<div class="px-5 py-4 border-b border-slate-100 flex justify-between items-center">
+<h4 class="font-bold text-slate-800">Recent Sales & Bills</h4>
+<span class="text-xs text-slate-400">Print or Resend WhatsApp Receipt</span>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-sm text-left">
+<thead class="bg-slate-50 text-slate-500 uppercase text-xs">
+<tr>
+<th class="px-4 py-3">Order/Bill ID</th>
+<th class="px-4 py-3">Source</th>
+<th class="px-4 py-3">Customer</th>
+<th class="px-4 py-3">Phone</th>
+<th class="px-4 py-3">Total Amount</th>
+<th class="px-4 py-3">Method</th>
+<th class="px-4 py-3">Actions</th>
+</tr>
+</thead>
+<tbody id="salesReportTableBody" class="divide-y divide-slate-100">
+</tbody>
+</table>
+</div>
+</div>
+</section>
+
+<!-- 5. MENU & PRODUCT INVENTORY -->
+<section id="inventory" class="tab-content space-y-6">
+<div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+<h3 class="font-bold text-slate-800 mb-4">Add New Item to Restaurant Menu</h3>
+<form id="addProductForm" onsubmit="handleProductAdd(event)" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+<div>
+<label class="text-xs font-semibold text-slate-600">Item Name</label>
+<input type="text" id="prodName" required class="w-full mt-1 p-2 border rounded text-xs">
+</div>
+<div>
+<label class="text-xs font-semibold text-slate-600">Price (₹)</label>
+<input type="number" id="prodPrice" required min="0" step="0.5" class="w-full mt-1 p-2 border rounded text-xs">
+</div>
+<div>
+<label class="text-xs font-semibold text-slate-600">Category</label>
+<input type="text" id="prodCat" placeholder="e.g. Beverages, Main Course" required class="w-full mt-1 p-2 border rounded text-xs">
+</div>
+<div class="sm:col-span-2 md:col-span-1">
+<label class="text-xs font-semibold text-slate-600">Item Photo (Drag & Drop)</label>
+<div id="productImgDropZone" class="drag-drop-zone p-3 rounded-lg text-center cursor-pointer text-xs mt-1 bg-slate-50">
+<i class="fa-solid fa-cloud-arrow-up text-indigo-500 mb-1"></i>
+<p id="prodImgFileName" class="text-slate-500">Drop image or click</p>
+<input type="file" id="prodImgInput" accept="image/*" class="hidden" onchange="handleProductFileSelect(this)">
+</div>
+</div>
+<div class="sm:col-span-2 md:col-span-4 flex justify-end">
+<button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs px-5 py-2.5 rounded">
++ Add Item to Menu Matrix
+</button>
+</div>
+</form>
+</div>
+
+<div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+<div class="px-5 py-4 border-b border-slate-100">
+<h4 class="font-bold text-slate-800">Current POS Item Catalogue</h4>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-sm text-left">
+<thead class="bg-slate-50 text-slate-500 uppercase text-xs">
+<tr>
+<th class="px-4 py-3">Item</th>
+<th class="px-4 py-3">Category</th>
+<th class="px-4 py-3">Price</th>
+<th class="px-4 py-3">Action</th>
+</tr>
+</thead>
+<tbody id="productTableBody" class="divide-y divide-slate-100">
+</tbody>
+</table>
+</div>
+</div>
+</section>
+
+<!-- 6. DATA BACKUP & RESTORE -->
+<section id="backup" class="tab-content space-y-6">
+<div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
+<h3 class="font-bold text-slate-800">Data Backup & Restore Configuration</h3>
+<p class="text-xs text-slate-500">Choose your preferred backup storage medium and secure your hotel & POS database.</p>
+
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+<div>
+<label class="text-xs font-semibold text-slate-600">Storage Destination</label>
+<select id="backupMedium" class="w-full mt-1 p-2 border rounded text-xs bg-white">
+<option value="local">Local Storage (Browser Device)</option>
+<option value="gdrive">Google Drive Cloud Sync</option>
+</select>
+</div>
+<div class="flex items-end">
+<button onclick="performBackupNow()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs py-2.5 rounded">
+<i class="fa-solid fa-cloud-arrow-up me-1"></i> Backup Now
+</button>
+</div>
+</div>
+
+<div class="border-t pt-4 mt-4">
+<h4 class="font-bold text-slate-700 text-xs mb-2">Restore Database from Backup File</h4>
+<div class="flex gap-2 items-center">
+<input type="file" id="restoreFileInput" accept=".json" class="border p-2 rounded text-xs flex-1 bg-slate-50">
+<button onclick="performRestoreNow()" class="bg-slate-800 hover:bg-slate-900 text-white font-semibold text-xs px-4 py-2.5 rounded">
+<i class="fa-solid fa-rotate-left me-1"></i> Restore Data
+</button>
+</div>
+</div>
+</div>
+</section>
+
+<!-- 7. LOYALTY PROGRAM & REFERRAL POINTS -->
+<section id="loyalty" class="tab-content space-y-6">
+<div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+<h3 class="font-bold text-slate-800 mb-2">Referral & Loyalty Program Settings</h3>
+<p class="text-xs text-slate-500 mb-4">Configure store-wide referral percentages credited on guest check-outs or POS sales.</p>
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+<div>
+<label class="text-xs font-semibold text-slate-600">Loyalty Earn Rate (%)</label>
+<input type="number" id="loyaltyPercent" value="5" class="w-full mt-1 p-2 border rounded text-xs">
+</div>
+<div>
+<label class="text-xs font-semibold text-slate-600">Referral Incentive Points/Sale</label>
+<input type="number" id="referralPoints" value="100" class="w-full mt-1 p-2 border rounded text-xs">
+</div>
+<div class="flex items-end">
+<button onclick="saveLoyaltySettings()" class="w-full bg-slate-800 text-white font-semibold text-xs py-2.5 rounded hover:bg-slate-900">
+Update Settings
+</button>
+</div>
+</div>
+</div>
+</section>
+
+<!-- 8. OFFERS & PROMOTIONS -->
+<section id="promotions" class="tab-content space-y-6">
+<div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+<h3 class="font-bold text-slate-800 mb-4">Create Campaign / WhatsApp Promo Banner</h3>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+<div>
+<label class="text-xs font-semibold text-slate-600">Promo Code / Campaign Title</label>
+<input type="text" id="promoTitle" placeholder="FESTIVE20" class="w-full mt-1 p-2 border rounded text-xs">
+</div>
+<div>
+<label class="text-xs font-semibold text-slate-600">Discount Offered (%)</label>
+<input type="number" id="promoDiscount" placeholder="20" class="w-full mt-1 p-2 border rounded text-xs">
+</div>
+</div>
+<button onclick="triggerBroadcastAlert()" class="mt-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs px-4 py-2 rounded">
+<i class="fa-brands fa-whatsapp me-1"></i> Broadcast Campaign to Guests
+</button>
+</div>
+</section>
+
+<!-- 9. MULTI-STORE MANAGEMENT -->
+<section id="stores" class="tab-content space-y-6">
+<div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+<h3 class="font-bold text-slate-800 mb-4">Register New Store / Branch Location</h3>
+<form id="addStoreForm" onsubmit="handleAddStore(event)" class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+<div>
+<label class="text-xs font-semibold text-slate-600">Store Name</label>
+<input type="text" id="storeName" required placeholder="Anilam Resort - Branch 2" class="w-full mt-1 p-2 border rounded text-xs">
+</div>
+<div>
+<label class="text-xs font-semibold text-slate-600">Address / Location</label>
+<input type="text" id="storeAddress" required placeholder="Hisua, Nawada, Bihar" class="w-full mt-1 p-2 border rounded text-xs">
+</div>
+<div class="flex items-end">
+<button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs py-2.5 rounded">
++ Register New Store Location
+</button>
+</div>
+</form>
+</div>
+
+<div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+<div class="px-5 py-4 border-b border-slate-100">
+<h4 class="font-bold text-slate-800">Active Multi-Store Network</h4>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-sm text-left">
+<thead class="bg-slate-50 text-slate-500 uppercase text-xs">
+<tr>
+<th class="px-4 py-3">Store ID</th>
+<th class="px-4 py-3">Store Name</th>
+<th class="px-4 py-3">Address</th>
+<th class="px-4 py-3">Status</th>
+</tr>
+</thead>
+<tbody id="storeTableBody" class="divide-y divide-slate-100">
+</tbody>
+</table>
+</div>
+</div>
+</section>
+
+</div>
+</main>
+
+<!-- Guest Check-In Modal with Expanded Fields -->
+<div id="bookingModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center hidden z-50 p-4">
+<div class="bg-white rounded-xl p-6 w-full max-w-2xl shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+<div class="flex justify-between items-center border-b pb-3">
+<h3 class="font-bold text-slate-800">Guest Check-In Registration</h3>
+<button onclick="closeBookingModal()" class="text-slate-400 hover:text-slate-600">&times;</button>
+</div>
+<form id="checkInForm" onsubmit="handleCheckInSubmit(event)" class="space-y-4">
+<input type="hidden" id="modalRoomId">
+
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+<div>
+<label class="text-xs font-semibold text-slate-600">WhatsApp Phone Number (Lookup)</label>
+<input type="tel" id="guestPhone" required placeholder="919876543210" onblur="lookupGuestByPhone(this.value)" class="w-full p-2 border rounded text-xs mt-1">
+</div>
+<div>
+<label class="text-xs font-semibold text-slate-600">Guest Full Name</label>
+<input type="text" id="guestName" required class="w-full p-2 border rounded text-xs mt-1">
+</div>
+</div>
+
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+<div>
+<label class="text-xs font-semibold text-slate-600">Full Address</label>
+<input type="text" id="guestAddress" placeholder="Street, City, State" required class="w-full p-2 border rounded text-xs mt-1">
+</div>
+<div>
+<label class="text-xs font-semibold text-slate-600">Nationality</label>
+<input type="text" id="guestNationality" value="Indian" required class="w-full p-2 border rounded text-xs mt-1">
+</div>
+</div>
+
+<div class="grid grid-cols-3 gap-2 bg-slate-50 p-3 rounded-lg border">
+<div>
+<label class="text-xs font-semibold text-slate-600">Male</label>
+<input type="number" id="guestMale" value="1" min="0" class="w-full p-1.5 border rounded text-xs mt-1">
+</div>
+<div>
+<label class="text-xs font-semibold text-slate-600">Female</label>
+<input type="number" id="guestFemale" value="0" min="0" class="w-full p-1.5 border rounded text-xs mt-1">
+</div>
+<div>
+<label class="text-xs font-semibold text-slate-600">Children</label>
+<input type="number" id="guestChildren" value="0" min="0" class="w-full p-1.5 border rounded text-xs mt-1">
+</div>
+</div>
+
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+<div>
+<label class="text-xs font-semibold text-slate-600">ID Proof Type</label>
+<select id="idType" class="w-full p-2 border rounded text-xs mt-1">
+<option value="Aadhaar Card">Aadhaar Card</option>
+<option value="Passport">Passport</option>
+<option value="Driving License">Driving License</option>
+<option value="Voter ID">Voter ID</option>
+</select>
+</div>
+<div>
+<label class="text-xs font-semibold text-slate-600">ID Card Number</label>
+<input type="text" id="idNo" required placeholder="XXXX-XXXX-XXXX" class="w-full p-2 border rounded text-xs mt-1">
+</div>
+</div>
+
+<!-- ID Drag and Drop Upload -->
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+<div>
+<label class="text-xs font-semibold text-slate-600">ID Front Image (Drag & Drop)</label>
+<div id="idFrontDropZone" class="drag-drop-zone p-3 rounded-lg text-center cursor-pointer text-xs mt-1 bg-slate-50">
+<i class="fa-solid fa-address-card text-indigo-500 mb-1 text-lg"></i>
+<p id="idFrontLabel" class="text-slate-500">Drop Front Image</p>
+<input type="file" id="idFrontInput" accept="image/*" class="hidden" onchange="handleIdFileSelect(this, 'idFrontLabel')">
+</div>
+</div>
+<div>
+<label class="text-xs font-semibold text-slate-600">ID Back Image (Drag & Drop)</label>
+<div id="idBackDropZone" class="drag-drop-zone p-3 rounded-lg text-center cursor-pointer text-xs mt-1 bg-slate-50">
+<i class="fa-solid fa-address-card text-indigo-500 mb-1 text-lg"></i>
+<p id="idBackLabel" class="text-slate-500">Drop Back Image</p>
+<input type="file" id="idBackInput" accept="image/*" class="hidden" onchange="handleIdFileSelect(this, 'idBackLabel')">
+</div>
+</div>
+</div>
+
+<div class="grid grid-cols-3 gap-2">
+<div>
+<label class="text-xs font-semibold text-slate-600">Duration (Nights)</label>
+<input type="number" id="stayNights" value="1" min="1" onchange="calcBookingTotals()" class="w-full p-2 border rounded text-xs mt-1">
+</div>
+<div>
+<label class="text-xs font-semibold text-slate-600">Advance Paid (₹)</label>
+<input type="number" id="advancePayment" value="0" min="0" onchange="calcBookingTotals()" class="w-full p-2 border rounded text-xs mt-1">
+</div>
+<div>
+<label class="text-xs font-semibold text-slate-600">Discount (₹)</label>
+<input type="number" id="roomDiscount" value="0" min="0" onchange="calcBookingTotals()" class="w-full p-2 border rounded text-xs mt-1">
+</div>
+</div>
+
+<div class="bg-slate-50 p-3 rounded-lg border text-xs space-y-1">
+<div class="flex justify-between"><span>Room Rate / Night:</span><span id="modalRoomRate">₹0</span></div>
+<div class="flex justify-between font-bold border-t pt-1"><span>Calculated Total:</span><span id="modalCalcTotal">₹0</span></div>
+</div>
+
+<button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded text-xs">
+Confirm Check-In & Send Receipt
+</button>
+</form>
+</div>
+</div>
+
+<!-- Receipt Modal -->
+<div id="receiptModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center hidden z-50 p-4">
+<div class="bg-white rounded-xl p-6 w-full max-w-md shadow-2xl space-y-4">
+<div class="flex justify-between items-center border-b pb-3">
+<h3 class="font-bold text-slate-800">Transaction Receipt</h3>
+<button onclick="closeReceiptModal()" class="text-slate-400 hover:text-slate-600">&times;</button>
+</div>
+<div id="receiptModalContent" class="text-xs space-y-2 font-mono bg-slate-50 p-4 rounded border">
+<!-- Dynamic Content -->
+</div>
+<div class="flex justify-end gap-2">
+<button onclick="window.print()" class="bg-slate-800 text-white font-semibold text-xs px-4 py-2 rounded">
+<i class="fa-solid fa-print me-1"></i> Print
+</button>
+</div>
+</div>
+</div>
+
+<script>
+// System Data State
+let stores = [
+{ id: 'STR-01', name: 'Anilam Main Resort', address: 'Hisua, Nawada' },
+{ id: 'STR-02', name: 'Anilam City POS', address: 'Danapur, Patna' }
+];
+let activeStoreId = 'STR-01';
+
+let rooms = [
+{ id: '101', type: 'Deluxe Room', price: 2500, status: 'Available', currentGuest: null },
+{ id: '102', type: 'Deluxe Room', price: 2500, status: 'Available', currentGuest: null },
+{ id: '201', type: 'Executive Suite', price: 4500, status: 'Available', currentGuest: null },
+{ id: '202', type: 'Executive Suite', price: 4500, status: 'Available', currentGuest: null }
+];
+
+let products = [
+{ id: 'P1', name: 'Espresso Coffee', price: 120, category: 'Beverages', img: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=150' },
+{ id: 'P2', name: 'Club Sandwich', price: 220, category: 'Snacks', img: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=150' },
+{ id: 'P3', name: 'Paneer Butter Masala', price: 340, category: 'Main Course', img: 'https://images.unsplash.com/photo-1631452180519-c014fe946bc7?w=150' },
+{ id: 'P4', name: 'Butter Naan', price: 50, category: 'Main Course', img: 'https://images.unsplash.com/photo-1626074353765-517a681e40be?w=150' }
+];
+
+let bookings = [];
+let pastGuestRegistry = []; // Stores historical guest profiles keyed by phone
+let posSales = [];
+let posCart = [];
+let salesHistory = [];
+let loyaltySettings = { percent: 5, refPoints: 100 };
+let totalPointsIssued = 0;
+
+let uploadedFrontImg = null;
+let uploadedBackImg = null;
+let uploadedProductImg = null;
+
+let revChartInstance = null;
+let chanChartInstance = null;
+let activePosCategory = 'all';
+
+window.onload = function() {
+renderStores();
+renderRooms();
+renderRoomRatesTable();
+renderBookingsTable();
+renderProducts();
+renderPosCategories();
+renderPosGrid();
+setupDragAndDrop();
+initCharts();
+updateDashboardMetrics();
+};
+
+function switchTab(tabId) {
+document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('bg-slate-800', 'text-white'));
+
+document.getElementById(tabId).classList.add('active');
+document.getElementById('pageTitle').innerText = tabId.replace('-', ' ').toUpperCase();
+if (tabId === 'sales-report') renderSalesReport();
+if (tabId === 'rooms') {
+renderRooms();
+renderRoomRatesTable();
+renderBookingsTable();
+}
+}
+
+function renderStores() {
+const select = document.getElementById('activeStoreSelect');
+const table = document.getElementById('storeTableBody');
+select.innerHTML = '';
+table.innerHTML = '';
+
+stores.forEach(s => {
+select.innerHTML += `<option value="${s.id}">${s.name}</option>`;
+table.innerHTML += `
+<tr>
+<td class="px-4 py-3 font-mono text-xs">${s.id}</td>
+<td class="px-4 py-3 font-medium">${s.name}</td>
+<td class="px-4 py-3 text-slate-500">${s.address}</td>
+<td class="px-4 py-3"><span class="bg-emerald-100 text-emerald-800 text-xs px-2 py-0.5 rounded">Active</span></td>
+</tr>`;
+});
+select.value = activeStoreId;
+}
+
+function handleAddStore(e) {
+e.preventDefault();
+const name = document.getElementById('storeName').value;
+const address = document.getElementById('storeAddress').value;
+const id = 'STR-0' + (stores.length + 1);
+
+stores.push({ id, name, address });
+document.getElementById('addStoreForm').reset();
+renderStores();
+alert('Store registered successfully!');
+}
+
+function switchActiveStore() {
+activeStoreId = document.getElementById('activeStoreSelect').value;
+const store = stores.find(s => s.id === activeStoreId);
+document.getElementById('currentStoreDisplay').innerText = `Store: ${store ? store.name : 'Selected Store'}`;
+updateDashboardMetrics();
+}
+
+// Drag & Drop Setup
+function setupDragAndDrop() {
+const setupZone = (zoneId, inputId, labelId, storeVarSetter) => {
+const zone = document.getElementById(zoneId);
+const input = document.getElementById(inputId);
+if (!zone || !input) return;
+
+zone.addEventListener('click', () => input.click());
+zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('dragover'); });
+zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+zone.addEventListener('drop', (e) => {
+e.preventDefault();
+zone.classList.remove('dragover');
+if (e.dataTransfer.files.length) {
+input.files = e.dataTransfer.files;
+document.getElementById(labelId).innerText = e.dataTransfer.files[0].name;
+storeVarSetter(e.dataTransfer.files[0].name);
+}
+});
+};
+
+setupZone('idFrontDropZone', 'idFrontInput', 'idFrontLabel', name => uploadedFrontImg = name);
+setupZone('idBackDropZone', 'idBackInput', 'idBackLabel', name => uploadedBackImg = name);
+setupZone('productImgDropZone', 'prodImgInput', 'prodImgFileName', name => uploadedProductImg = name);
+}
+
+function handleIdFileSelect(input, labelId) {
+if (input.files.length) {
+document.getElementById(labelId).innerText = input.files[0].name;
+}
+}
+
+function handleProductFileSelect(input) {
+if (input.files.length) {
+document.getElementById('prodImgFileName').innerText = input.files[0].name;
+}
+}
+
+// Room Management
+function renderRooms() {
+const grid = document.getElementById('roomGrid');
+grid.innerHTML = '';
+
+rooms.forEach(r => {
+let statusBadge = '';
+let actionButton = '';
+
+if (r.status === 'Occupied') {
+statusBadge = `<span class="text-xs px-2 py-0.5 rounded-full font-semibold bg-amber-100 text-amber-800">Occupied</span>`;
+actionButton = `<button onclick="checkoutRoom('${r.id}')" class="mt-2 w-full bg-rose-600 text-white font-semibold py-1.5 rounded text-xs hover:bg-rose-700">Check Out</button>`;
+} else if (r.status === 'Under Cleaning') {
+statusBadge = `<span class="text-xs px-2 py-0.5 rounded-full font-semibold bg-orange-100 text-orange-800">Under Cleaning</span>`;
+actionButton = `<button onclick="setRoomStatus('${r.id}', 'Available')" class="mt-2 w-full bg-emerald-600 text-white font-semibold py-1.5 rounded text-xs hover:bg-emerald-700">Set Ready to Check-In</button>`;
+} else {
+statusBadge = `<span class="text-xs px-2 py-0.5 rounded-full font-semibold bg-emerald-100 text-emerald-800">Available</span>`;
+actionButton = `
+<div class="grid grid-cols-2 gap-1 mt-2">
+<button onclick="openBookingModal('${r.id}')" class="bg-indigo-600 text-white font-semibold py-1.5 rounded text-xs hover:bg-indigo-700">Check-In</button>
+<button onclick="setRoomStatus('${r.id}', 'Under Cleaning')" class="bg-orange-600 text-white font-semibold py-1.5 rounded text-xs hover:bg-orange-700">Clean</button>
+</div>`;
+}
+
+grid.innerHTML += `
+<div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+<div>
+<div class="flex justify-between items-start">
+<span class="font-bold text-lg text-slate-800">Room ${r.id}</span>
+${statusBadge}
+</div>
+<p class="text-xs text-slate-500 mt-1">${r.type}</p>
+<p class="text-sm font-bold text-indigo-600 mt-2">₹${r.price} / night</p>
+${r.currentGuest ? `<p class="text-xs text-slate-600 mt-1"><strong>Guest:</strong> ${r.currentGuest.name}</p>` : ''}
+</div>
+<div class="mt-4 border-t pt-2">
+${actionButton}
+</div>
+</div>`;
+});
+}
+
+function setRoomStatus(roomId, newStatus) {
+const room = rooms.find(r => r.id === roomId);
+if (room) {
+room.status = newStatus;
+if (newStatus === 'Available') room.currentGuest = null;
+renderRooms();
+}
+}
+
+function renderRoomRatesTable() {
+const tbody = document.getElementById('roomRatesTableBody');
+tbody.innerHTML = '';
+rooms.forEach(r => {
+tbody.innerHTML += `
+<tr>
+<td class="px-4 py-3 font-bold text-slate-700">Room ${r.id}</td>
+<td class="px-4 py-3 text-slate-500">${r.type}</td>
+<td class="px-4 py-3">
+<input type="number" value="${r.price}" id="rate-input-${r.id}" class="w-24 p-1 border rounded text-xs">
+</td>
+<td class="px-4 py-3">
+<button onclick="updateRoomRate('${r.id}')" class="bg-slate-800 text-white text-xs px-3 py-1 rounded">Update</button>
+</td>
+</tr>`;
+});
+}
+
+function updateRoomRate(roomId) {
+const input = document.getElementById(`rate-input-${roomId}`);
+const room = rooms.find(r => r.id === roomId);
+if (room && input) {
+room.price = parseFloat(input.value) || room.price;
+renderRooms();
+renderRoomRatesTable();
+alert(`Updated Room ${roomId} rate to ₹${room.price}`);
+}
+}
+
+function openBookingModal(roomId = '') {
+const roomSelect = roomId || (rooms.find(r => r.status === 'Available') || {}).id;
+if (!roomSelect) {
+alert('No available rooms for check-in!');
+return;
+}
+document.getElementById('modalRoomId').value = roomSelect;
+const room = rooms.find(r => r.id === roomSelect);
+document.getElementById('modalRoomRate').innerText = `₹${room ? room.price : 0}`;
+calcBookingTotals();
+document.getElementById('bookingModal').classList.remove('hidden');
+}
+
+function closeBookingModal() {
+document.getElementById('bookingModal').classList.add('hidden');
+document.getElementById('checkInForm').reset();
+}
+
+function calcBookingTotals() {
+const roomId = document.getElementById('modalRoomId').value;
+const room = rooms.find(r => r.id === roomId);
+const price = room ? room.price : 0;
+const nights = parseInt(document.getElementById('stayNights').value) || 1;
+const discount = parseFloat(document.getElementById('roomDiscount').value) || 0;
+const total = Math.max(0, (price * nights) - discount);
+document.getElementById('modalCalcTotal').innerText = `₹${total.toFixed(2)}`;
+}
+
+function lookupGuestByPhone(phone) {
+const existing = pastGuestRegistry.find(g => g.phone === phone.trim());
+if (existing) {
+document.getElementById('guestName').value = existing.name;
+document.getElementById('guestAddress').value = existing.address;
+document.getElementById('guestNationality').value = existing.nationality;
+document.getElementById('idType').value = existing.idType;
+document.getElementById('idNo').value = existing.idNo;
+}
+}
+
+function handleCheckInSubmit(e) {
+e.preventDefault();
+const roomId = document.getElementById('modalRoomId').value;
+const phone = document.getElementById('guestPhone').value;
+const name = document.getElementById('guestName').value;
+const address = document.getElementById('guestAddress').value;
+const nationality = document.getElementById('guestNationality').value;
+const idType = document.getElementById('idType').value;
+const idNo = document.getElementById('idNo').value;
+const nights = parseInt(document.getElementById('stayNights').value) || 1;
+const advance = parseFloat(document.getElementById('advancePayment').value) || 0;
+const discount = parseFloat(document.getElementById('roomDiscount').value) || 0;
+
+const room = rooms.find(r => r.id === roomId);
+const total = Math.max(0, (room.price * nights) - discount);
+const balance = Math.max(0, total - advance);
+
+const guestInfo = { name, phone, address, nationality, idType, idNo };
+pastGuestRegistry.push(guestInfo);
+
+const booking = {
+id: 'BK-' + Date.now().toString().slice(-5),
+roomId,
+guest: guestInfo,
+occupants: {
+m: document.getElementById('guestMale').value,
+f: document.getElementById('guestFemale').value,
+c: document.getElementById('guestChildren').value
+},
+total,
+advance,
+balance,
+date: new Date().toLocaleDateString()
+};
+
+bookings.push(booking);
+salesHistory.push({
+id: booking.id,
+source: 'Room Booking',
+customer: name,
+phone: phone,
+amount: total,
+method: advance >= total ? 'Prepaid' : 'Partial/Pay-at-Checkout',
+storeId: activeStoreId
+});
+
+room.status = 'Occupied';
+room.currentGuest = guestInfo;
+
+// Points tracking
+const pts = Math.floor(total * (loyaltySettings.percent / 100));
+totalPointsIssued += pts;
+
+closeBookingModal();
+renderRooms();
+renderBookingsTable();
+updateDashboardMetrics();
+alert('Guest checked in successfully!');
+}
+
+function renderBookingsTable() {
+const tbody = document.getElementById('bookingTableBody');
+tbody.innerHTML = '';
+bookings.forEach(b => {
+tbody.innerHTML += `
+<tr>
+<td class="px-4 py-3 font-medium">${b.guest.name}<br><span class="text-xs text-slate-400">${b.guest.phone}</span></td>
+<td class="px-4 py-3">Room ${b.roomId}</td>
+<td class="px-4 py-3 text-xs">${b.occupants.m}M / ${b.occupants.f}F / ${b.occupants.c}C</td>
+<td class="px-4 py-3 text-xs">${b.guest.idType}: ${b.guest.idNo}</td>
+<td class="px-4 py-3 font-bold">₹${b.total} / <span class="text-emerald-600">₹${b.advance}</span></td>
+<td class="px-4 py-3 font-bold text-rose-600">₹${b.balance}</td>
+<td class="px-4 py-3">
+<button onclick="checkoutRoom('${b.roomId}')" class="bg-rose-600 text-white text-xs px-2 py-1 rounded">Check Out</button>
+</td>
+</tr>`;
+});
+}
+
+function checkoutRoom(roomId) {
+const room = rooms.find(r => r.id === roomId);
+if (room) {
+room.status = 'Under Cleaning';
+room.currentGuest = null;
+renderRooms();
+renderBookingsTable();
+}
+}
+
+// Restaurant POS Systems
+function renderPosCategories() {
+const container = document.getElementById('posCategories');
+const cats = ['all', ...new Set(products.map(p => p.category))];
+container.innerHTML = cats.map(c => `
+<button onclick="filterPosCategory('${c}')" class="${activePosCategory === c ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-700'} text-xs font-semibold px-4 py-2 rounded-full whitespace-nowrap uppercase">
+${c}
+</button>
+`).join('');
+}
+
+function filterPosCategory(cat) {
+activePosCategory = cat;
+renderPosCategories();
+renderPosGrid();
+}
+
+function renderPosGrid() {
+const grid = document.getElementById('posGrid');
+grid.innerHTML = '';
+const filtered = activePosCategory === 'all' ? products : products.filter(p => p.category === activePosCategory);
+
+filtered.forEach(p => {
+grid.innerHTML += `
+<div onclick="addToCart('${p.id}')" class="bg-white p-3 rounded-lg border border-slate-200 shadow-sm cursor-pointer hover:border-indigo-400 transition flex flex-col justify-between">
+<img src="${p.img}" class="w-full h-20 object-cover rounded mb-2">
+<div>
+<h5 class="font-bold text-xs text-slate-800 leading-tight">${p.name}</h5>
+<p class="text-xs font-bold text-indigo-600 mt-1">₹${p.price}</p>
+</div>
+</div>`;
+});
+}
+
+function addToCart(prodId) {
+const prod = products.find(p => p.id === prodId);
+const existing = posCart.find(item => item.id === prodId);
+
+if (existing) {
+existing.qty += 1;
+} else {
+posCart.push({ ...prod, qty: 1 });
+}
+renderCart();
+}
+
+function updateCartQty(prodId, delta) {
+const item = posCart.find(i => i.id === prodId);
+if (item) {
+item.qty += delta;
+if (item.qty <= 0) {
+posCart = posCart.filter(i => i.id !== prodId);
+}
+}
+renderCart();
+}
+
+function renderCart() {
+const container = document.getElementById('posCartItems');
+if (posCart.length === 0) {
+container.innerHTML = `<p class="text-xs text-slate-400 text-center py-8">Tap items to add to order</p>`;
+calculatePosTotal();
+return;
+}
+
+container.innerHTML = posCart.map(item => `
+<div class="flex justify-between items-center text-xs bg-slate-50 p-2 rounded">
+<div class="flex-1">
+<p class="font-semibold text-slate-700">${item.name}</p>
+<p class="text-slate-400">₹${item.price} x ${item.qty}</p>
+</div>
+<div class="flex items-center gap-2">
+<button onclick="updateCartQty('${item.id}', -1)" class="w-5 h-5 bg-slate-200 rounded font-bold flex items-center justify-center">-</button>
+<span class="font-bold">${item.qty}</span>
+<button onclick="updateCartQty('${item.id}', 1)" class="w-5 h-5 bg-slate-200 rounded font-bold flex items-center justify-center">+</button>
+</div>
+</div>
+`).join('');
+
+calculatePosTotal();
+}
+
+function calculatePosTotal() {
+const subtotal = posCart.reduce((acc, item) => acc + (item.price * item.qty), 0);
+const pct = parseFloat(document.getElementById('posDiscountPercent').value) || 0;
+const flat = parseFloat(document.getElementById('posDiscountFlat').value) || 0;
+
+const afterPct = subtotal - (subtotal * (pct / 100));
+const grandTotal = Math.max(0, afterPct - flat);
+
+document.getElementById('posSubtotal').innerText = `₹${subtotal.toFixed(2)}`;
+document.getElementById('posGrandTotal').innerText = `₹${grandTotal.toFixed(2)}`;
+}
+
+function processPosCheckout(method) {
+if (posCart.length === 0) {
+alert('Cart is empty!');
+return;
+}
+const customer = document.getElementById('posCustomerName').value || 'Walk-in Guest';
+const phone = document.getElementById('posCustomerPhone').value || 'N/A';
+const subtotal = posCart.reduce((acc, item) => acc + (item.price * item.qty), 0);
+const pct = parseFloat(document.getElementById('posDiscountPercent').value) || 0;
+const flat = parseFloat(document.getElementById('posDiscountFlat').value) || 0;
+const total = Math.max(0, (subtotal - (subtotal * (pct / 100))) - flat);
+
+const orderId = 'POS-' + Date.now().toString().slice(-5);
+const record = {
+id: orderId,
+source: 'Restaurant POS',
+customer,
+phone,
+amount: total,
+method,
+storeId: activeStoreId,
+items: [...posCart]
+};
+
+salesHistory.push(record);
+posSales.push(record);
+
+const pts = Math.floor(total * (loyaltySettings.percent / 100));
+totalPointsIssued += pts;
+
+posCart = [];
+document.getElementById('posCustomerName').value = '';
+document.getElementById('posCustomerPhone').value = '';
+document.getElementById('posDiscountPercent').value = '0';
+document.getElementById('posDiscountFlat').value = '0';
+document.getElementById('posOrderNo').innerText = `#ORD-${Math.floor(Math.random()*900+100)}`;
+renderCart();
+updateDashboardMetrics();
+showReceipt(record);
+}
+
+// Product / Inventory Management
+function handleProductAdd(e) {
+e.preventDefault();
+const name = document.getElementById('prodName').value;
+const price = parseFloat(document.getElementById('prodPrice').value);
+const category = document.getElementById('prodCat').value;
+
+const newProd = {
+id: 'P' + (products.length + 1),
+name,
+price,
+category,
+img: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=150'
+};
+
+products.push(newProd);
+document.getElementById('addProductForm').reset();
+document.getElementById('prodImgFileName').innerText = 'Drop image or click';
+renderProducts();
+renderPosCategories();
+renderPosGrid();
+alert('Menu item added!');
+}
+
+function renderProducts() {
+const tbody = document.getElementById('productTableBody');
+tbody.innerHTML = '';
+products.forEach(p => {
+tbody.innerHTML += `
+<tr>
+<td class="px-4 py-3 font-medium flex items-center gap-2">
+<img src="${p.img}" class="w-8 h-8 rounded object-cover">
+${p.name}
+</td>
+<td class="px-4 py-3 text-slate-500">${p.category}</td>
+<td class="px-4 py-3 font-bold">₹${p.price}</td>
+<td class="px-4 py-3">
+<button onclick="removeProduct('${p.id}')" class="text-rose-600 text-xs font-semibold">Delete</button>
+</td>
+</tr>`;
+});
+}
+
+function removeProduct(id) {
+products = products.filter(p => p.id !== id);
+renderProducts();
+renderPosCategories();
+renderPosGrid();
+}
+
+// Reports & Receipts
+function renderSalesReport() {
+const tbody = document.getElementById('salesReportTableBody');
+tbody.innerHTML = '';
+salesHistory.forEach(s => {
+tbody.innerHTML += `
+<tr>
+<td class="px-4 py-3 font-mono text-xs">${s.id}</td>
+<td class="px-4 py-3 text-xs"><span class="px-2 py-0.5 rounded bg-slate-100">${s.source}</span></td>
+<td class="px-4 py-3 font-medium">${s.customer}</td>
+<td class="px-4 py-3 text-xs text-slate-500">${s.phone}</td>
+<td class="px-4 py-3 font-bold">₹${s.amount.toFixed(2)}</td>
+<td class="px-4 py-3 text-xs">${s.method}</td>
+<td class="px-4 py-3">
+<button onclick="reprintReceipt('${s.id}')" class="bg-indigo-50 text-indigo-600 text-xs px-2 py-1 rounded font-semibold">Receipt</button>
+</td>
+</tr>`;
+});
+}
+
+function showReceipt(record) {
+const modal = document.getElementById('receiptModal');
+const content = document.getElementById('receiptModalContent');
+const store = stores.find(s => s.id === record.storeId) || stores[0];
+
+let itemsHTML = '';
+if (record.items) {
+itemsHTML = record.items.map(i => `<div class="flex justify-between"><span>${i.name} x${i.qty}</span><span>₹${(i.price*i.qty).toFixed(2)}</span></div>`).join('');
+}
+
+content.innerHTML = `
+<div class="text-center font-bold text-sm">${store.name}</div>
+<div class="text-center text-slate-500 mb-2">${store.address}</div>
+<hr class="my-2 border-dashed">
+<div>Bill ID: ${record.id}</div>
+<div>Customer: ${record.customer}</div>
+<div>Phone: ${record.phone}</div>
+<div>Method: ${record.method}</div>
+<hr class="my-2 border-dashed">
+${itemsHTML}
+<hr class="my-2 border-dashed">
+<div class="flex justify-between font-bold text-sm"><span>GRAND TOTAL:</span><span>₹${record.amount.toFixed(2)}</span></div>
+`;
+
+modal.classList.remove('hidden');
+}
+
+function reprintReceipt(id) {
+const record = salesHistory.find(s => s.id === id);
+if (record) showReceipt(record);
+}
+
+function closeReceiptModal() {
+document.getElementById('receiptModal').classList.add('hidden');
+}
+
+// Backup & System Functions
+function performBackupNow() {
+const data = { stores, rooms, products, bookings, salesHistory, loyaltySettings };
+const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+const url = URL.createObjectURL(blob);
+const a = document.createElement('a');
+a.href = url;
+a.download = `Anilam_ERP_Backup_${Date.now()}.json`;
+a.click();
+}
+
+function performRestoreNow() {
+const fileInput = document.getElementById('restoreFileInput');
+if (!fileInput.files.length) {
+alert('Please choose a backup JSON file first.');
+return;
+}
+const reader = new FileReader();
+reader.onload = function(e) {
+try {
+const data = JSON.parse(e.target.result);
+if (data.stores) stores = data.stores;
+if (data.rooms) rooms = data.rooms;
+if (data.products) products = data.products;
+if (data.bookings) bookings = data.bookings;
+if (data.salesHistory) salesHistory = data.salesHistory;
+if (data.loyaltySettings) loyaltySettings = data.loyaltySettings;
+
+renderStores();
+renderRooms();
+renderProducts();
+updateDashboardMetrics();
+alert('Database restored successfully!');
+} catch(err) {
+alert('Invalid JSON file layout.');
+}
+};
+reader.readAsText(fileInput.files[0]);
+}
+
+function saveLoyaltySettings() {
+loyaltySettings.percent = parseFloat(document.getElementById('loyaltyPercent').value) || 5;
+loyaltySettings.refPoints = parseFloat(document.getElementById('referralPoints').value) || 100;
+alert('Loyalty settings updated!');
+}
+
+function triggerBroadcastAlert() {
+const title = document.getElementById('promoTitle').value;
+const disc = document.getElementById('promoDiscount').value;
+if (!title) {
+alert('Enter a campaign code!');
+return;
+}
+alert(`Broadcast sent! Campaign "${title}" (${disc}% OFF) generated for guest list.`);
+}
+
+// Dashboard & Analytics
+function updateDashboardMetrics() {
+const roomRev = salesHistory.filter(s => s.source === 'Room Booking' && s.storeId === activeStoreId).reduce((a, b) => a + b.amount, 0);
+const posRev = salesHistory.filter(s => s.source === 'Restaurant POS' && s.storeId === activeStoreId).reduce((a, b) => a + b.amount, 0);
+const total = roomRev + posRev;
+
+document.getElementById('dashTotalRev').innerText = `₹${total.toFixed(2)}`;
+document.getElementById('dashRoomRev').innerText = `₹${roomRev.toFixed(2)}`;
+document.getElementById('dashPosRev').innerText = `₹${posRev.toFixed(2)}`;
+document.getElementById('dashPointsIssued').innerText = `${totalPointsIssued} Pts`;
+
+updateCharts(roomRev, posRev);
+}
+
+function initCharts() {
+const ctx1 = document.getElementById('revenueChart').getContext('2d');
+revChartInstance = new Chart(ctx1, {
+type: 'bar',
+data: {
+labels: ['Main Branch', 'City POS'],
+datasets: [{
+label: 'Revenue (₹)',
+data: [0, 0],
+backgroundColor: ['#6366f1', '#10b981']
+}]
+},
+options: { responsive: true, maintainAspectRatio: false }
+});
+
+const ctx2 = document.getElementById('channelChart').getContext('2d');
+chanChartInstance = new Chart(ctx2, {
+type: 'doughnut',
+data: {
+labels: ['Room Bookings', 'Restaurant POS'],
+datasets: [{
+data: [1, 1],
+backgroundColor: ['#818cf8', '#34d399']
+}]
+},
+options: { responsive: true, maintainAspectRatio: false }
+});
+}
+
+function updateCharts(roomRev, posRev) {
+if (!revChartInstance || !chanChartInstance) return;
+
+revChartInstance.data.datasets[0].data = [roomRev + posRev, posRev];
+revChartInstance.update();
+
+chanChartInstance.data.datasets[0].data = [roomRev || 1, posRev || 1];
+chanChartInstance.update();
+}
+</script>
+</body>
+</html>
